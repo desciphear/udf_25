@@ -1,0 +1,901 @@
+{
+	"info": {
+		"_postman_id": "a3c048f8-bafd-4ce7-8aae-33ec2e96160e",
+		"name": "Pipeline",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40464434"
+	},
+	"item": [
+		{
+			"name": "Login_user1",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(\"Executing Pre-request Script...\");\r",
+							"\r",
+							"function getAuthToken() {\r",
+							"    let authToken = pm.collectionVariables.get(\"auth2\");\r",
+							"    let refreshToken = pm.collectionVariables.get(\"refresh2\");\r",
+							"\r",
+							"    if (authToken && refreshToken) {\r",
+							"        console.log(\"Using existing tokens:\");\r",
+							"        return { authToken, refreshToken };\r",
+							"    } else {\r",
+							"        console.log(\"Tokens not found. Requesting new ones...\");\r",
+							"\r",
+							"        // Asynchronous token request\r",
+							"        pm.sendRequest({\r",
+							"            url: 'https://example.com/api/auth', // 🔁 Update this\r",
+							"            method: 'POST',\r",
+							"            header: {\r",
+							"                'Content-Type': 'application/json'\r",
+							"            },\r",
+							"            body: {\r",
+							"                mode: 'raw',\r",
+							"                raw: JSON.stringify({\r",
+							"                    username: pm.environment.get(\"username2\"),\r",
+							"                    password: pm.environment.get(\"password2\")\r",
+							"                })\r",
+							"            }\r",
+							"        }, function (err, response) {\r",
+							"            if (err) {\r",
+							"                console.error(\"Error fetching tokens:\", err);\r",
+							"                return;\r",
+							"            }\r",
+							"\r",
+							"            if (response.code === 200) {\r",
+							"                const data = response.json();\r",
+							"                const newAuthToken = data.access_token;\r",
+							"                const newRefreshToken = data.refresh_token;\r",
+							"\r",
+							"                pm.collectionVariables.set(\"auth2\", newAuthToken);\r",
+							"                pm.collectionVariables.set(\"refresh2\", newRefreshToken);\r",
+							"\r",
+							"                console.log(\"New tokens set.\");\r",
+							"                pm.request.headers.add({ key: \"Authorization\", value: `Bearer ${newAuthToken}` });\r",
+							"            } else {\r",
+							"                console.error(\"Token request failed with status:\", response.code);\r",
+							"            }\r",
+							"        });\r",
+							"\r",
+							"        return {}; // Tokens not ready immediately due to async call\r",
+							"    }\r",
+							"}\r",
+							"\r",
+							"// Get tokens (won't work reliably for async fetch above)\r",
+							"const tokens = getAuthToken();\r",
+							"if (tokens.authToken) {\r",
+							"    pm.request.headers.add({ key: \"Authorization\", value: `Bearer ${tokens.authToken}` });\r",
+							"}\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let responseBody = pm.response.json();\r",
+							"\r",
+							"if (responseBody) {\r",
+							"    console.log(\"Parsed JSON Response:\", JSON.stringify(responseBody));\r",
+							"\r",
+							"    const accessToken = responseBody.access_token;\r",
+							"    const refreshToken = responseBody.refresh_token;\r",
+							"    const idToken = responseBody.id_token;\r",
+							"\r",
+							"    if (accessToken) {\r",
+							"        pm.collectionVariables.set(\"auth2\", accessToken);  // Used in Auth Header\r",
+							"        console.log(\"Access Token set:\", accessToken);\r",
+							"    }\r",
+							"\r",
+							"    if (refreshToken) {\r",
+							"        pm.collectionVariables.set(\"refresh2\", refreshToken);\r",
+							"        console.log(\"Refresh Token set:\", refreshToken);\r",
+							"    }\r",
+							"\r",
+							"    if (idToken) {\r",
+							"        pm.environment.set(\"id_token\", idToken);\r",
+							"        console.log(\"ID Token set:\", idToken);\r",
+							"    }\r",
+							"\r",
+							"    // Validations\r",
+							"    pm.test(\"Status code is 200\", function () {\r",
+							"        pm.response.to.have.status(200);\r",
+							"    });\r",
+							"\r",
+							"    pm.test(\"Response time is acceptable\", function () {\r",
+							"        pm.expect(pm.response.responseTime).to.be.below(1000);\r",
+							"    });\r",
+							"\r",
+							"    pm.test(\"Required fields exist\", function () {\r",
+							"        pm.expect(responseBody).to.have.property('access_token');\r",
+							"        pm.expect(responseBody).to.have.property('refresh_token');\r",
+							"        pm.expect(responseBody).to.have.property('id_token');\r",
+							"    });\r",
+							"\r",
+							"} else {\r",
+							"    console.error(\"Failed to parse response body.\");\r",
+							"    pm.test(\"Login failed: Invalid response body\", function () {\r",
+							"        pm.expect.fail(\"Login failed: response body is empty or not JSON\");\r",
+							"    });\r",
+							"}\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "*/*",
+						"disabled": true
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9,mr;q=0.8",
+						"disabled": true
+					},
+					{
+						"key": "content-type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "origin",
+						"value": "https://nimbus-uno-qa.solyticspartners.com",
+						"disabled": true
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i",
+						"disabled": true
+					},
+					{
+						"key": "referer",
+						"value": "https://nimbus-uno-qa.solyticspartners.com/",
+						"disabled": true
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\"",
+						"disabled": true
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0",
+						"disabled": true
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Windows\"",
+						"disabled": true
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty",
+						"disabled": true
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors",
+						"disabled": true
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-site",
+						"disabled": true
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+						"disabled": true
+					},
+					{
+						"key": "Cookie",
+						"value": "AUTH_SESSION_ID=453ae719-e896-4947-a6dd-8d8361152f35.nimbus-uno-qa-keycloak-0-14202; KEYCLOAK_IDENTITY=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI3OTk3Y2U1NC03MzFjLTQyYjctODFkYi1kZDAzZDkyNzAzZTIifQ.eyJleHAiOjE3NDcyMTkyOTQsImlhdCI6MTc0NzEzNTI5NCwianRpIjoiYmQyZDM0NzctNzAzZi00MjlhLWE1MTctNTZkYTRhNTg1MzU2IiwiaXNzIjoiaHR0cHM6Ly9uaW1idXMtdW5vLXFhLWtleWNsb2FrLnNvbHl0aWNzcGFydG5lcnMuY29tL3JlYWxtcy9xYSIsInN1YiI6IjZiZTA1MDA1LWNmZjMtNGMxNy05YzYwLTJmODEwNzViM2E1ZiIsInR5cCI6IlNlcmlhbGl6ZWQtSUQiLCJzaWQiOiI0NTNhZTcxOS1lODk2LTQ5NDctYTZkZC04ZDgzNjExNTJmMzUiLCJzdGF0ZV9jaGVja2VyIjoiZklHVE9Ra0ZWeWVyeXJqdll1T1lIRUJwSEU0bERBWGlzVzVGYWRNOWhGdyJ9.uHBifzbRh1sCTh5TmsthLqDx16DTWcGJvUaVq1SolFAlzq3mJbbO3sDbOew-tdgHf_Y8XjGFzIbSJsJvPOzEaA; KEYCLOAK_SESSION=\"qa/6be05005-cff3-4c17-9c60-2f81075b3a5f/453ae719-e896-4947-a6dd-8d8361152f35\"",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "code",
+							"value": "0e561a21-6a7a-4c98-af59-cddce604ee45.453ae719-e896-4947-a6dd-8d8361152f35.c05d9a4e-f316-44d8-8008-1a613688a4ea",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "grant_type",
+							"value": "password",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "Nimbus",
+							"type": "text"
+						},
+						{
+							"key": "redirect_uri",
+							"value": "https://nimbus-uno-qa.solyticspartners.com/project/overview",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "code_verifier",
+							"value": "3Gl9kZFwA84kgNAJxWjo4nx9sam6iOCnbEeGB0zeFLPjb9MgkeQU9rl0oAd5ZH3yykSY84nSqIqfvXvmUDQsCtcgB5leEFyh",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "username",
+							"value": "validator_1",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "Validator_12",
+							"type": "text"
+						},
+						{
+							"key": "org",
+							"value": "qa",
+							"type": "text"
+						},
+						{
+							"key": "scope",
+							"value": "openid",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{BaseURL}}/realms/qa/protocol/openid-connect/token",
+					"host": [
+						"{{BaseURL}}"
+					],
+					"path": [
+						"realms",
+						"qa",
+						"protocol",
+						"openid-connect",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PL_sharing",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// console.log(\"Sharing with ID:\", pm.variables.get(\"shared_id\"));\r",
+							"let currentUser = pm.iterationData.get(\"username\");\r",
+							"let userToken = pm.collectionVariables.get(\"auth2_\" + currentUser);\r",
+							"\r",
+							"if (userToken) {\r",
+							"    pm.collectionVariables.set(\"auth2\", userToken);  // used in headers as {{auth2}}\r",
+							"} else {\r",
+							"    console.warn(\"Token not found for user: \" + currentUser);\r",
+							"}\r",
+							"\r",
+							"\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Test to ensure the response status code is 200\r",
+							"pm.test(\"Ensure response is 200\", function () {\r",
+							"    const statusCode = pm.response.code;\r",
+							"\r",
+							"    if (statusCode === 200) {\r",
+							"        pm.expect(statusCode).to.equal(200);\r",
+							"        console.log(\"Response is 200 OK\");\r",
+							"    } else if (statusCode === 400) {\r",
+							"        console.warn(\"Response is 400 Bad Request\");\r",
+							"        console.log(\"Response body:\", pm.response.text());\r",
+							"    } else {\r",
+							"        console.error(`❌ Unexpected response code: ${statusCode}`);\r",
+							"        console.log(\"Response body:\", pm.response.text());\r",
+							"    }\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {}
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9,mr;q=0.8"
+					},
+					{
+						"key": "authorization",
+						"value": "Bearer {{auth2}}"
+					},
+					{
+						"key": "content-type",
+						"value": "application/json"
+					},
+					{
+						"key": "org",
+						"value": "qa"
+					},
+					{
+						"key": "origin",
+						"value": "https://nimbus-uno-qa.solyticspartners.com"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://nimbus-uno-qa.solyticspartners.com/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Windows\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-site"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"pipeline\": {{pipeline_id}},\r\n    \"project_id\": {{project_id}},\r\n    \"receiver_ids\": [\r\n        {{receiver_ids}}\r\n        ],\r\n    \"notes\": \"qa\",\r\n    \"clone_history\": true\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BaseURL2}}/data-ingestion/pipeline-management/pipeline-share",
+					"host": [
+						"{{BaseURL2}}"
+					],
+					"path": [
+						"data-ingestion",
+						"pipeline-management",
+						"pipeline-share"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login_user2",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// var login1_username = pm.iterationData.get(\"login1_username\");\r",
+							"// pm.environment.set(\"login1_username\", login1_username);\r",
+							"// var login1_password = pm.iterationData.get(\"login1_password\");\r",
+							"// pm.environment.set(\"login1_password\", login1_password);\r",
+							"\r",
+							"let currentUser = pm.iterationData.get(\"username\");\r",
+							"let userToken = pm.collectionVariables.get(\"auth2_\" + currentUser);\r",
+							"\r",
+							"if (userToken) {\r",
+							"    pm.collectionVariables.set(\"auth2\", userToken);  // used in headers as {{auth2}}\r",
+							"} else {\r",
+							"    console.warn(\"Token not found for user: \" + currentUser);\r",
+							"}\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Parse the JSON response from the API\r",
+							"var responseBody = pm.response.json();\r",
+							"\r",
+							"// Extract tokens from the response\r",
+							"var accessToken = responseBody.access_token;\r",
+							"var refreshToken = responseBody.refresh_token;\r",
+							"\r",
+							"// Get the current username (assumes 'username' is passed in CSV and request)\r",
+							"var currentUser = pm.iterationData.get(\"username\");  // Comes from CSV\r",
+							"\r",
+							"// Store tokens in collection variables with username suffix\r",
+							"if (accessToken) {\r",
+							"    pm.collectionVariables.set(\"auth2_\" + currentUser, accessToken);\r",
+							"    console.log(\"Access Token for \" + currentUser + \":\", accessToken);\r",
+							"}\r",
+							"\r",
+							"if (refreshToken) {\r",
+							"    pm.collectionVariables.set(\"refresh2_\" + currentUser, refreshToken);\r",
+							"    console.log(\"Refresh Token for \" + currentUser + \":\", refreshToken);\r",
+							"}\r",
+							"\r",
+							"// Optional: set a common variable if this token should be used immediately\r",
+							"pm.collectionVariables.set(\"auth2\", accessToken);  // Overrides general token if needed\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "*/*",
+						"disabled": true
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9,mr;q=0.8",
+						"disabled": true
+					},
+					{
+						"key": "content-type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "origin",
+						"value": "https://nimbus-uno-qa.solyticspartners.com",
+						"disabled": true
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i",
+						"disabled": true
+					},
+					{
+						"key": "referer",
+						"value": "https://nimbus-uno-qa.solyticspartners.com/",
+						"disabled": true
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\"",
+						"disabled": true
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0",
+						"disabled": true
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Windows\"",
+						"disabled": true
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty",
+						"disabled": true
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors",
+						"disabled": true
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-site",
+						"disabled": true
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+						"disabled": true
+					},
+					{
+						"key": "Cookie",
+						"value": "AUTH_SESSION_ID=453ae719-e896-4947-a6dd-8d8361152f35.nimbus-uno-qa-keycloak-0-14202; KEYCLOAK_IDENTITY=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI3OTk3Y2U1NC03MzFjLTQyYjctODFkYi1kZDAzZDkyNzAzZTIifQ.eyJleHAiOjE3NDcyMTkyOTQsImlhdCI6MTc0NzEzNTI5NCwianRpIjoiYmQyZDM0NzctNzAzZi00MjlhLWE1MTctNTZkYTRhNTg1MzU2IiwiaXNzIjoiaHR0cHM6Ly9uaW1idXMtdW5vLXFhLWtleWNsb2FrLnNvbHl0aWNzcGFydG5lcnMuY29tL3JlYWxtcy9xYSIsInN1YiI6IjZiZTA1MDA1LWNmZjMtNGMxNy05YzYwLTJmODEwNzViM2E1ZiIsInR5cCI6IlNlcmlhbGl6ZWQtSUQiLCJzaWQiOiI0NTNhZTcxOS1lODk2LTQ5NDctYTZkZC04ZDgzNjExNTJmMzUiLCJzdGF0ZV9jaGVja2VyIjoiZklHVE9Ra0ZWeWVyeXJqdll1T1lIRUJwSEU0bERBWGlzVzVGYWRNOWhGdyJ9.uHBifzbRh1sCTh5TmsthLqDx16DTWcGJvUaVq1SolFAlzq3mJbbO3sDbOew-tdgHf_Y8XjGFzIbSJsJvPOzEaA; KEYCLOAK_SESSION=\"qa/6be05005-cff3-4c17-9c60-2f81075b3a5f/453ae719-e896-4947-a6dd-8d8361152f35\"",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "code",
+							"value": "0e561a21-6a7a-4c98-af59-cddce604ee45.453ae719-e896-4947-a6dd-8d8361152f35.c05d9a4e-f316-44d8-8008-1a613688a4ea",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "grant_type",
+							"value": "password",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "Nimbus",
+							"type": "text"
+						},
+						{
+							"key": "redirect_uri",
+							"value": "https://nimbus-uno-qa.solyticspartners.com/project/overview",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "code_verifier",
+							"value": "3Gl9kZFwA84kgNAJxWjo4nx9sam6iOCnbEeGB0zeFLPjb9MgkeQU9rl0oAd5ZH3yykSY84nSqIqfvXvmUDQsCtcgB5leEFyh",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "username",
+							"value": "{{username}}",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "{{password}}",
+							"type": "text"
+						},
+						{
+							"key": "org",
+							"value": "qa",
+							"type": "text"
+						},
+						{
+							"key": "scope",
+							"value": "openid",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{BaseURL}}/realms/qa/protocol/openid-connect/token",
+					"host": [
+						"{{BaseURL}}"
+					],
+					"path": [
+						"realms",
+						"qa",
+						"protocol",
+						"openid-connect",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://nimbus-uno-qa.nginx.solyticspartners.com/v6/automated-pipeline/pipeline-sharelist",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"let currentUser = pm.iterationData.get(\"username\");\r",
+							"let userToken = pm.collectionVariables.get(\"auth2_\" + currentUser);\r",
+							"\r",
+							"if (userToken) {\r",
+							"    pm.collectionVariables.set(\"auth2\", userToken);  // used in headers as {{auth2}}\r",
+							"} else {\r",
+							"    console.warn(\"Token not found for user: \" + currentUser);\r",
+							"}\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9,mr;q=0.8"
+					},
+					{
+						"key": "authorization",
+						"value": "Bearer {{auth2}}"
+					},
+					{
+						"key": "org",
+						"value": "qa"
+					},
+					{
+						"key": "origin",
+						"value": "https://nimbus-uno-qa.solyticspartners.com"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://nimbus-uno-qa.solyticspartners.com/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Windows\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-site"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BaseURL1}}/v6/automated-pipeline/pipeline-sharelist",
+					"host": [
+						"{{BaseURL1}}"
+					],
+					"path": [
+						"v6",
+						"automated-pipeline",
+						"pipeline-sharelist"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://nimbus-uno-qa.nginx.solyticspartners.com/v6/automated-pipeline/pipeline-sharelist",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"function pad(n) {\r",
+							"    return n < 10 ? '0' + n : n;\r",
+							"}\r",
+							"\r",
+							"const now = new Date();\r",
+							"const istOffsetMs = 5.5 * 60 * 60 * 1000;\r",
+							"const ist = new Date(now.getTime() + istOffsetMs);\r",
+							"\r",
+							"const formatted = ist.getFullYear() + '-' +\r",
+							"    pad(ist.getMonth() + 1) + '-' +\r",
+							"    pad(ist.getDate()) + 'T' +\r",
+							"    pad(ist.getHours()) + ':' +\r",
+							"    pad(ist.getMinutes()) + ':' +\r",
+							"    pad(ist.getSeconds()) + '+05:30';\r",
+							"\r",
+							"// Print to console\r",
+							"console.log(\"Generated IST timestamp: \" + formatted);\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Ensure response is 200\", function () {\r",
+							"    const statusCode = pm.response.code;\r",
+							"    if (statusCode === 200) {\r",
+							"        console.log(\"Accepted successfully\");\r",
+							"        pm.expect(statusCode).to.equal(200);\r",
+							"    } else if (statusCode === 400) {\r",
+							"        console.warn(\"Bad Request (400)\");\r",
+							"        console.log(\"Response body:\", pm.response.text());\r",
+							"    } else {\r",
+							"        console.error(`Unexpected response code: ${statusCode}`);\r",
+							"        console.log(\"Response body:\", pm.response.text());\r",
+							"    }\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en;q=0.9,mr;q=0.8"
+					},
+					{
+						"key": "authorization",
+						"value": "Bearer {{auth2}}"
+					},
+					{
+						"key": "org",
+						"value": "qa"
+					},
+					{
+						"key": "origin",
+						"value": "https://nimbus-uno-qa.solyticspartners.com"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://nimbus-uno-qa.solyticspartners.com/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Windows\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-site"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"receiver_project_ids\": [{{receiver_project_ids}}],\r\n  \"share_action\": \"Accept\",\r\n  \"clone_name\": \"{{clone_name}}\",\r\n  \"description\": \"qa\",\r\n  \"clone_history\": true,\r\n  \"pipeline_id\": {{pipeline_id}},\r\n  \"project_id\": {{project_id}},\r\n  \"entity_id\": {{entity_id}}\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{BaseURL1}}/data-ingestion/pipeline-management/pipeline-share-action",
+					"host": [
+						"{{BaseURL1}}"
+					],
+					"path": [
+						"data-ingestion",
+						"pipeline-management",
+						"pipeline-share-action"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "auth2",
+			"value": ""
+		},
+		{
+			"key": "refresh2",
+			"value": ""
+		},
+		{
+			"key": "receiver_ids",
+			"value": "receiver_ids",
+			"type": "default"
+		},
+		{
+			"key": "auth2_test-qa",
+			"value": ""
+		},
+		{
+			"key": "refresh2_test-qa",
+			"value": ""
+		},
+		{
+			"key": "auth2_manager",
+			"value": ""
+		},
+		{
+			"key": "refresh2_manager",
+			"value": ""
+		}
+	]
+}
